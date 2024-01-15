@@ -7,51 +7,65 @@
 
 import SwiftUI
 
-struct ContentView: View {
-    @State private var path = NavigationPath()
-    @State private var selectedTab: Tab = .red
 
+struct Item: Hashable {
+    var color: Color
+    var index: Int
+}
+
+struct ContentView: View {
+    @State private var path1 = NavigationPath()
+    @State private var path2 = NavigationPath()
+    @State private var selectedTab: Tab = .tab1
+    
     enum Tab {
-        case red, green
+        case tab1, tab2
         var title: String {
             switch self {
-            case .red: "Red tab"
-            case .green: "Green tab"
+            case .tab1: "Red tab"
+            case .tab2: "Green tab"
             }
         }
     }
     
     var body: some View {
-        NavigationStack(path: $path) {
-            TabView(selection: $selectedTab) {
-                colorView(.red).tabItem {
-                    Label("Red Tab", systemImage: "1.circle.fill")
-                }.tag(Tab.red).overlay {
-                    Button(action: {
-                        withAnimation { path.append(Color.yellow) }
-                    }) {
-                        Text("Push a yellow view")
+        TabView(selection: $selectedTab) {
+            NavigationStack(path: $path1) {
+                itemView(Item(color: .red, index: 0), path: $path1, prefix: "Tab 1")
+                    .navigationDestination(for: Item.self) { newItem in
+                        itemView(newItem, path: $path1, prefix: "Tab 1")
+                            .navigationBarTitleDisplayMode(.inline)
                     }
-                }
+            }
+            .tabItem { Label("Tab 1", systemImage: "1.circle.fill") }
+            .tag(Tab.tab1)
 
-                colorView(.green).tag(Tab.green).tabItem {
-                    Label("Green Tab", systemImage: "1.circle.fill")
-                }
+            NavigationStack(path: $path2) {
+                itemView(Item(color: .green, index: 0), path: $path2, prefix: "Tab 2")
+                    .navigationDestination(for: Item.self) { newItem in
+                        itemView(newItem, path: $path2, prefix: "Tab 2")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
             }
-            .navigationTitle(selectedTab.title)
-            .navigationDestination(for: Color.self) { newColor in
-                colorView(newColor, "View at \(path.count)")
-                    .navigationBarTitleDisplayMode(.inline)
-            }
+            .tabItem { Label("Tab 2", systemImage: "2.circle.fill") }
+            .tag(Tab.tab2)
         }
         .tint(.white)
     }
     
-    func colorView(_ color: Color, _ title: String? = nil) -> some View {
+    func itemView(_ item: Item, path: Binding<NavigationPath>, prefix titlePrefix: String) -> some View {
         ZStack {
-            color.ignoresSafeArea()
+            item.color.ignoresSafeArea()
+            
+            Button(action: {
+                let pathCount = path.wrappedValue.count
+                let newItem = Item(color: .yellow, index: pathCount + 1)
+                path.wrappedValue.append(newItem)
+            }) {
+                Text("Push a yellow view")
+            }
         }
-        .navigationTitle(title ?? "")
+        .navigationTitle("\(titlePrefix) at \(item.index)")
     }
 }
 
